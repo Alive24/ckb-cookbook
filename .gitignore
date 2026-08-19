@@ -20,3 +20,11 @@ yarn-debug.log*
 yarn-error.log*
 .env
 .vercel
+
+# Shea machine-local runtime state
+.shea/app-profile.local.json
+.shea/runtime-profile.json
+.shea/artifacts/
+.shea/local/
+.shea/logs/
+.shea/worktrees/

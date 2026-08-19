@@ -1,0 +1,147 @@
+---
+tracker:
+  kind: github_project_v2
+  owner: Alive24
+  repo: ckb-cookbook
+  project_owner: Alive24
+  project_owner_type: user
+  project_number: 13
+  status_field: Status
+  state_map:
+    backlog: Backlog
+    todo: Todo
+    need_to_clarify: Need to Clarify
+    in_progress: In Progress
+    need_human_input: Need Human Input
+    agent_review: Agent Review
+    human_review: Human Review
+    rework: Rework
+    merging: Merging
+    done: Done
+  active_states:
+    - Todo
+    - Rework
+  terminal_states:
+    - Done
+    - Closed
+    - Cancelled
+    - Canceled
+    - Duplicate
+  assignee_filter:
+    source: issue_assignees
+    additional_assignees: []
+  workpad:
+    source: issue_comment
+    marker: "<!-- shea-symphony-workpad -->"
+git:
+  base_branch: master
+resources:
+  manifest: ../resources.v1.json
+  enabled_groups:
+    - core
+temporal:
+  address: localhost:7233
+  namespace: default
+  task_queues:
+    core: symphony-core
+    agent: symphony-agent
+    local: symphony-local
+  worker:
+    core_concurrency: 3
+    agent_concurrency: 3
+    local_concurrency: 8
+prompts:
+  main_agent: ../prompts/main-agent.md
+  review_agent: ../prompts/review-agent.md
+  merge_agent: ../prompts/merge-agent.md
+backend_prompts:
+  codex_app_server: ../prompts/backend/codex-app-server.md
+  automatic_review: ../prompts/backend/automatic-review.md
+  automatic_review_structured: ../prompts/backend/automatic-review-structured.md
+  claude_code_review: ../prompts/backend/claude-code-review.md
+  merge_repair: ../prompts/backend/merge-repair.md
+workpad_templates:
+  main_handoff: ../template/workpad/main-handoff.md
+  main_handoff_failure: ../template/workpad/main-handoff-failure.md
+  main_assignee_ownership: ../template/workpad/main-assignee-ownership.md
+  main_quality_gate: ../template/workpad/main-quality-gate.md
+  main_runtime_ownership: ../template/workpad/main-runtime-ownership.md
+  main_usage_limit_pause: ../template/workpad/main-usage-limit-pause.md
+  workspace_adoption: ../template/evidence/workspace-adoption.md
+  workspace_ensure: ../template/evidence/workspace-ensure.md
+  agent_review_run: ../template/evidence/agent-review.md
+  agent_review_handoff: ../template/evidence/agent-review-handoff.md
+  repeated_review_failure: ../template/evidence/repeated-review-failure.md
+  manual_review: ../template/evidence/manual-review.md
+  review_invalid_handoff: ../template/evidence/review-invalid-handoff.md
+  rework_diagnostic: ../template/evidence/rework-diagnostic.md
+  review_freshness: ../template/evidence/review-freshness.md
+  doctor_triage: ../template/evidence/doctor-triage.md
+  human_review_repair: ../template/evidence/human-review-repair.md
+  merge_run: ../template/evidence/merge-run.md
+  merge_repair: ../template/evidence/merge-repair.md
+  forge_rework_run: ../template/evidence/forge-rework-run.md
+  forge_rework_blocked: ../template/evidence/forge-rework-blocked.md
+  lane_session: ../template/evidence/lane-session.md
+polling:
+  interval_ms: 50000
+artifacts:
+  root: ../artifacts
+  namespace: Alive24/ckb-cookbook
+workspace:
+  root: ../worktrees
+main_lane:
+  backend: codex
+  max_concurrent_agents: 3
+  max_turns: 3
+  max_retry_backoff_ms: 300000
+codex:
+  command: codex app-server -c 'service_tier="fast"'
+  reasoning_effort: high
+  approval_policy: never
+  stall_timeout_ms: 300000
+  session_stale_after_ms: 1800000
+claude:
+  command: claude
+review_lane:
+  backend: agy-cli
+  agy_command: /Users/chuntengxiao/.local/bin/agy
+  agy_model: "Gemini 3.1 Pro (High)"
+  # Alternative: backend: claude-code. Optional claude_command overrides
+  # claude.command and should carry the operator's read-only permission policy.
+  codex_approval_policy: never
+  codex_thread_sandbox: read-only
+  timeout_ms: 1200000
+  max_concurrent_workers: 2
+merge_lane:
+  agent_backend: codex
+  max_concurrent_workers: 3
+verification:
+  timeout_ms: 600000
+  commands:
+    - npm run build
+runtime_profile:
+  path: ../runtime-profile.json
+  required: true
+  timeout_ms: 10000
+observability:
+  logs_root: ../logs
+---
+
+# Shea Symphony Workflow Index
+
+This is the canonical normal operator workflow for CKB Cookbook Project #13.
+The front matter above owns shared tracker, workspace, review, verification,
+artifact, and observability configuration. Agent behavior is intentionally split
+by lane so each command initializes with the contract that matches its authority
+boundary.
+
+Lane prompt contracts:
+
+- Main Agent: `../prompts/main-agent.md`
+- Review Agent: `../prompts/review-agent.md`
+- Merge Agent: `../prompts/merge-agent.md`
+
+Older fixture workflows may still keep an inline prompt body. This canonical
+workflow uses explicit lane prompts so Main, Review, and Merge agents do not
+share one implicit main-agent prompt.
